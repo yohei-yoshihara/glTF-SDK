@@ -1,18 +1,18 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.28)
 project (GLTFSDK)
 
-option(ENABLE_UNIT_TESTS "ENABLE_UNIT_TESTS" ON)
-if(ENABLE_UNIT_TESTS)
+option(GLTFSDK_ENABLE_UNIT_TESTS "ENABLE_UNIT_TESTS" OFF)
+if(GLTFSDK_ENABLE_UNIT_TESTS)
     enable_testing()
 endif()
 
 # Disable the samples on macOS, iOS, and Android since the experimental features they use
 # do not yet build with XCode or clang on these platforms.
-if(APPLE OR ANDROID_OS_PLATFORM)
-    option(ENABLE_SAMPLES "ENABLE_SAMPLES" OFF)
-else()
-    option(ENABLE_SAMPLES "ENABLE_SAMPLES" ON)
-endif()
+# if(APPLE OR ANDROID_OS_PLATFORM)
+    option(GLTFSDK_ENABLE_SAMPLES "ENABLE_SAMPLES" OFF)
+# else()q
+#     option(GLTFSDK_ENABLE_SAMPLES "ENABLE_SAMPLES" ON)
+# endif()
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,41 +33,48 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/Build/CMake/Modules")
 
-if(NOT IOS)
+set(RAPIDJSON_BUILD_DOC OFF CACHE BOOL "")
+set(RAPIDJSON_BUILD_EXAMPLES OFF CACHE BOOL "")
+set(RAPIDJSON_BUILD_TESTS OFF CACHE BOOL "")
+# if(NOT IOS)
     # This variable is set by ios.toolchain.cmake.
     # Notice that External/RapidJSON uses `find_package` for external project is ready.
     # We have to prevent modification of RapidJSON_XXX variables in cache at this moment
-    find_package(RapidJSON CONFIG)
-endif()
-if(NOT RapidJSON_FOUND)
+    # find_package(RapidJSON CONFIG)
+# endif()
+# if(NOT RapidJSON_FOUND)
     add_subdirectory(External/RapidJSON)
-endif()
-find_package(GTest CONFIG)
-if(NOT GTest_FOUND)
-    # import and alias just like it is already installed via VcPkg
-    add_subdirectory(External/googletest)
-    add_library(GTest::gtest_main ALIAS gtest_main)
+# endif()
+
+if(GLTFSDK_ENABLE_UNIT_TESTS)
+    find_package(GTest CONFIG)
+    if(NOT GTest_FOUND)
+        # import and alias just like it is already installed via VcPkg
+        add_subdirectory(External/googletest)
+        add_library(GTest::gtest_main ALIAS gtest_main)
+    endif()
 endif()
 
 add_subdirectory(GLTFSDK)
 
-if(RapidJSON_FOUND)
-    target_include_directories(GLTFSDK
-        PUBLIC $<BUILD_INTERFACE:${RapidJSON_INCLUDE_DIRS}>
-    )
-elseif(TARGET RapidJSON)
-    get_target_property(RapidJSON_INCLUDE_DIRS RapidJSON INTERFACE_INCLUDE_DIRECTORIES)
-    target_include_directories(GLTFSDK
-        PUBLIC $<BUILD_INTERFACE:${RapidJSON_INCLUDE_DIRS}>
-    )
-endif()
+# if(RapidJSON_FOUND)
+    # target_include_directories(GLTFSDK
+    #     PUBLIC $<BUILD_INTERFACE:${RapidJSON_INCLUDE_DIRS}>
+    # )
+    target_include_directories(GLTFSDK PUBLIC SYSTEM External/RapidJSON/include)
+# elseif(TARGET RapidJSON)
+#     get_target_property(RapidJSON_INCLUDE_DIRS RapidJSON INTERFACE_INCLUDE_DIRECTORIES)
+#     target_include_directories(GLTFSDK
+#         PUBLIC $<BUILD_INTERFACE:${RapidJSON_INCLUDE_DIRS}>
+#     )
+# endif()
 
-if(ENABLE_UNIT_TESTS AND (NOT DEFINED EMSCRIPTEN))
+if(GLTFSDK_ENABLE_UNIT_TESTS AND (NOT DEFINED EMSCRIPTEN))
     add_subdirectory(GLTFSDK.TestUtils)
     add_subdirectory(GLTFSDK.Test)
 endif()
 
-if(ENABLE_SAMPLES AND (NOT DEFINED EMSCRIPTEN))
+if(GLTFSDK_ENABLE_SAMPLES AND (NOT DEFINED EMSCRIPTEN))
     add_subdirectory(GLTFSDK.Samples)
 endif()
 

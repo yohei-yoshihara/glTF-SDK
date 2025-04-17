@@ -334,3 +334,4 @@ Built/
 
 # VS Code
 .vscode/
+build/
